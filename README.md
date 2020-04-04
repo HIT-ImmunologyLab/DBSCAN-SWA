@@ -66,7 +66,7 @@ dbscan-swa --input <bac_path> --output <outdir> --prefix <prefix>
 ```
 2. predict prophages of query bacterium and no phage annotation:
 ```
-dbscan-swa --input <bac_path> --output <outdir> --prefix <prefix> --add_annotation nonne
+dbscan-swa --input <bac_path> --output <outdir> --prefix <prefix> --add_annotation none
 ```
 3. predict prophages of query bacterium and detect the bacterium-phage interaction between the query bacterium and query phage:
 ```
