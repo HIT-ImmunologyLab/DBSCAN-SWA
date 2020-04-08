@@ -2064,7 +2064,7 @@ def prophage_annotate_phage(prophage_region_file,prophage_protein_file,prophage_
 	except:
 		print('extract prophage feature Error!')
 
-def	annotate_prophage_region(prophage_region_file,prophage_protein_file,prophage_nucl_file,annotate_outdir,add_annotation,prefix):
+def	annotate_prophage_region(strain_id,prophage_region_file,prophage_protein_file,prophage_nucl_file,annotate_outdir,add_annotation,prefix):
 	if add_annotation == 'PGPD':
 		prophage_annotate_phagedb(prophage_region_file,prophage_protein_file,prophage_nucl_file,annotate_outdir,prefix)	
 	else:
