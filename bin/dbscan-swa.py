@@ -287,7 +287,7 @@ def predict_prophage_swa(protein_file,blastp_file,outdir,k,prefix):#choose these
 				for key in keyword:
 					if key not in keys:
 						keys.append(key)
-		if counter>6:
+		if counter>=6:
 			# start = proteins_key[s]
 			# end = proteins_key[s+k-1]
 			start = temp_pros[bounder[0]]
@@ -300,7 +300,7 @@ def predict_prophage_swa(protein_file,blastp_file,outdir,k,prefix):#choose these
 			if bounder[-1]==len(temp_pros)-1:
 				temp_pros1 = temp_pros[bounder[0]:]
 			else:
-				temp_pros[bounder[0]:bounder[-1]+1]
+				temp_pros1 = temp_pros[bounder[0]:bounder[-1]+1]
 			for temp in temp_pros1:
 				pro_id = temp['name']
 				if pro_id in bac_protein_homo_dict.keys():
