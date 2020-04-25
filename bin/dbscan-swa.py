@@ -586,7 +586,7 @@ def get_inf(file,outdir):
 			strain_def = record.description
 			strain_info_dict = {genome_id.split()[0].split('.')[0]:strain_def}
 		except:
-			strain_info_dict = get_strain_info(file,outdir)
+			strain_info_dict,strain_sequence_dict  = get_strain_info(file,outdir)
 	else:
 		type="genbank"
 		record = SeqIO.read(file,"genbank")
@@ -1275,6 +1275,7 @@ def get_strain_info(file,outdir):
 	strain_file = os.path.join(outdir,'strain_inf.txt')
 	f_result = open(strain_file,'w')
 	strain_inf_dict = {}
+	strain_sequence_dict = {}
 	with open(file) as f:
 		contents = f.read().strip()
 	if '\n>' in contents:		
@@ -1285,6 +1286,8 @@ def get_strain_info(file,outdir):
 			strain_inf_dict.update({genome_id.split('.')[0]:strain_def})
 			f_result.write(genome_id+'\t'+strain_def+'\n')
 			f_result.flush()
+			sequence = ''.join(strain.split('\n')[1:]).strip()
+			strain_sequence_dict.update({genome_id.split('.')[0]:sequence})
 	else:
 		strain_title = contents.split('\n')[0].strip()
 		genome_id = strain_title.split()[0].strip('>')
@@ -1292,8 +1295,10 @@ def get_strain_info(file,outdir):
 		strain_inf_dict.update({genome_id.split('.')[0]:strain_def})
 		f_result.write(genome_id+'\t'+strain_def+'\n')
 		f_result.flush()
+		sequence = ''.join(contents.split('\n')[1:]).strip()
+		strain_sequence_dict.update({genome_id.split('.')[0]:sequence})
 	f_result.close()
-	return strain_inf_dict
+	return strain_inf_dict,strain_sequence_dict
 
 def get_inf(file,outdir):
 	with open(file) as f:
@@ -1306,7 +1311,7 @@ def get_inf(file,outdir):
 			strain_def = record.description
 			strain_info_dict = {strain_id.split()[0].split('.')[0]:strain_def}
 		except:
-			strain_info_dict = get_strain_info(file,outdir)
+			strain_info_dict,strain_sequence_dict = get_strain_info(file,outdir)
 	else:
 		type="genbank"
 		record = SeqIO.read(file,"genbank")
