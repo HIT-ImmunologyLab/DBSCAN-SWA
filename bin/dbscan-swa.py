@@ -23,8 +23,8 @@ Usage: DBSCAN-SWA [options]
 							3.none:no phage annotation. default:PGPD
 --per <x>                  : Minimal % percentage of hit proteins on hit prophage region(default:30)
 --idn <x>                  : Minimal % identity of hit region on hit prophage region by making blastn(default:70)
--cov <x>                   : Minimal % coverage of hit region on hit prophage region by making blastn(default:30)
--thread_num <x>            : the number of threads for multiple contigs(default:10)
+--cov <x>                  : Minimal % coverage of hit region on hit prophage region by making blastn(default:30)
+--thread_num <x>           : the number of threads(default:10)
 
 """
 
@@ -1338,6 +1338,8 @@ def get_bac_protein(inputfile_bac,protein_dir,strain_type,save_prefix,add_genome
 		annotate_bacteria_fasta(inputfile_bac,protein_dir,save_prefix,kingdom) #prokka
 		
 		bac_gb_file = os.path.join(protein_dir,save_prefix+'.gbk')
+		if not os.path.exists(bac_gb_file):
+			bac_gb_file = os.path.join(protein_dir,save_prefix+'.gbf')
 		if add_genome_id == 'no':
 			GetFaaSequenc(bac_gb_file,protein_dir,save_prefix)
 		else:
@@ -2560,6 +2562,17 @@ def predict_prophage(strain_id,inputfile_bac,outdir,add_annotation,prefix):
 	run_time = str(float((end-start))/60)
 	print('Running time: %s minutes! Finished prediction in %s'%(run_time,outdir))
 
+class MyThread(threading.Thread):
+	def __init__(self,strain_id,inputfile_bac,c_outdir,add_annotation,c_prefix):
+		threading.Thread.__init__(self)
+		self.strain_id = strain_id
+		self.inputfile_bac = inputfile_bac
+		self.c_outdir = c_outdir
+		self.add_annotation = add_annotation
+		self.c_prefix = c_prefix
+	def run(self):
+		predict_prophage(self.strain_id,self.inputfile_bac,self.c_outdir,self.add_annotation,self.c_prefix)
+
 
 
 if __name__=='__main__':
@@ -2575,10 +2588,9 @@ if __name__=='__main__':
 	parser.add_argument('--cov', help='optional,blastn coverage cutoff when anotating .\n')
 	parser.add_argument('--protein_number', help='optional,the protein number of expanding when finding prophage boundaries .\n')
 	parser.add_argument('--min_protein_num', help='optional,the protein number of expanding when finding prophage boundaries .\n')
-	parser.add_argument('--thread_num',help='''thread number''')
+	parser.add_argument('--thread_num', help='optional,the number of threads for multiple contigs.\n')
 	
 	parser.add_argument('--h',help='''print help information''')
-	
 	args = parser.parse_args()
 	global root_path
 	if args.h:
@@ -2635,7 +2647,6 @@ if __name__=='__main__':
 		cov = args.cov
 	else:
 		cov = 30
-	
 	if args.thread_num:
 		thread_num = args.thread_num
 	else:
@@ -2699,8 +2710,8 @@ if __name__=='__main__':
 			with open(c_inputfile_bac,'w') as f:
 				f.write('>'+strain_id+' '+strain_inf_dict[strain_id]+'\n'+strain_sequence_dict[strain_id]+'\n')
 			pro_file = os.path.join(c_outdir,'protein_annotation',c_prefix+'_protein.faa')
-			if os.path.getsize(pro_file)>0:
-			# try:
+			if os.path.getsize(c_inputfile_bac)>0:
+			#try:
 				tsk.append(MyThread(strain_id,c_inputfile_bac,c_outdir,add_annotation,c_prefix))
 			# except:
 			# 	print('Error: unable to start thread')
