@@ -599,7 +599,7 @@ def get_inf(file,outdir,prefix='bac'):
 	np.save(strain_inf_dict_file,strain_info_dict)
 	return strain_info_dict,type
 
-def get_protein_to_position_genbank(pro_file,start,end,outfile,method):
+def get_protein_to_position_genbank(pro_file,start,end,outfile,method,strain_id):
 	f_result = open(outfile,'w')
 	with open(pro_file) as f:
 		contents = f.read().strip().split('>ref')
@@ -1181,7 +1181,7 @@ def decide_boundary(strain_id,bac_fna_file,bac_faa_file,prophage_region_detail_f
 				wide_attl = 'NA'
 				wide_attr = 'NA'
 			c_save_prophage_protein_file = os.path.join(att_dir,prophage_start+'_'+prophage_end+'_prophage.faa')
-			region_pro_sequence_list,prophage_pro_num = get_protein_to_position_genbank(bac_faa_file,prophage_start,prophage_end,c_save_prophage_protein_file,'DBSCAN-SWA')
+			region_pro_sequence_list,prophage_pro_num = get_protein_to_position_genbank(bac_faa_file,prophage_start,prophage_end,c_save_prophage_protein_file,'DBSCAN-SWA',bac_info[0])
 			
 			key_words = [item.split('|')[-2] for item in region_pro_sequence_list[0::2] if len(item.split('|'))==6]
 			key_words = ','.join(list(set(','.join(key_words).split(','))))
@@ -1201,7 +1201,7 @@ def decide_boundary(strain_id,bac_fna_file,bac_faa_file,prophage_region_detail_f
 				f_save_prophage_protein.write(region_pro+'|'+str(prophage_pro_num)+'\n'+region_pro_sequence_list[2*index+1].strip()+'\n')
 				f_save_prophage_protein.flush()
 					
-			f_save_prophage_nucl.write('>'+strain_id+'|'+prophage_start+':'+prophage_end+'|DBSCAN-SWA\n'+bac_sequence[int(prophage_start)-1:int(prophage_end)]+'\n')
+			f_save_prophage_nucl.write('>'+bac_info[0]+'|'+prophage_start+':'+prophage_end+'|DBSCAN-SWA\n'+bac_sequence[int(prophage_start)-1:int(prophage_end)]+'\n')
 			f_save_prophage_nucl.flush()
 			
 			f_save.write('>prophage '+str(region_index+1)+'\n')
@@ -1742,8 +1742,10 @@ def prophage_annotate_phagedb(prophage_region_file,prophage_protein_file,prophag
 		m2.start()
 		m1.join()
 		m2.join()
+	time.sleep(1)
 	filter_file = os.path.join(outdir,'prophage_blastp_phage_identity_0.4_coverage_0.7')
 	filter_identity_coverage(outfile_blastp,filter_file,'query')
+	time.sleep(1)
 	if os.path.exists(outfile_blastp) or os.path.exists(outfile_blastn):
 		m1 = threading.Thread(target=parse_prophage_blastn_phagedb_6,args=(outfile_blastn,outdir))
 		m2 = threading.Thread(target=parse_prophage_blastp_phagedb_6,args=(filter_file,outdir))
@@ -1757,7 +1759,7 @@ def prophage_annotate_phagedb(prophage_region_file,prophage_protein_file,prophag
 	try:
 		get_bac_phage_feature(prophage_region_file,outfile_blastp_dict_file,outfile_blastn_dict_file,outdir,prefix)
 	except:
-		print('parse prophage feature value error!')
+		print('no phage detected!')
 
 def get_bac_phage_feature(prophage_region_file,prophage_blastp_dict_file,prophage_blastn_dict_file,outdir,prefix):
 	all_prophage_info_dict = {}
@@ -1765,10 +1767,11 @@ def get_bac_phage_feature(prophage_region_file,prophage_blastp_dict_file,prophag
 		contents = f.read().strip().split('>prophage')
 	for line in contents[1:]:
 		line = line.strip().split('\n')[1].split('\t')
-		bac_id = line[0].split('.')[0]
 		bac_def = line[1]
 		prophage_region = line[3]+':'+line[4]
+		bac_id = line[0]
 		all_prophage_info_dict.update({bac_id+'_'+prophage_region:line})
+	#print(all_prophage_info_dict)
 	prophage_blastp_result_file = os.path.join(outdir,"prophage_blastp_phage_result.txt")
 	prophage_blastn_result_file = os.path.join(outdir,"prophage_blastn_phage_result.txt")
 	prophage_blastp_original_file = os.path.join(outdir,'prophage_blastp_phage_identity_0.4_coverage_0.7')
@@ -1907,8 +1910,8 @@ def get_bac_phage_feature(prophage_region_file,prophage_blastp_dict_file,prophag
 		prophage_blastn_dict = np.load(prophage_blastn_dict_file).item()
 	except:
 		pass
-	
-	#print(prophage_file_blastp_dict)
+	# print(prophage_blastp_dict)
+	# print(prophage_file_blastp_dict)
 	save_prophage_hit_phage_dict = {}	
 	result_file = os.path.join(outdir,prefix+'_prophage_annotate_phage.txt')
 	f_prophage_result = open(result_file,'w')
@@ -1933,61 +1936,64 @@ def get_bac_phage_feature(prophage_region_file,prophage_blastp_dict_file,prophag
 		else:
 			blastn_hit_list = []
 		hit_phage_list = list(set(blastp_hit_list+blastn_hit_list))
-
+		print(hit_phage_list)
 		for phage_id in hit_phage_list:
 			phage_id = phage_id.split('.')[0]
 			try:
 				phage_def = phage_inf_dict[phage_id]
 			except:
 				phage_def = phage_id
-
-			if phage_id in prophage_blastp_dict[contig_id].keys():
-				blastp_prophage_info = prophage_blastp_dict[contig_id][phage_id]
-				if contig_id not in save_prophage_hit_phage_dict.keys():
-					save_prophage_hit_phage_dict.update({contig_id:{}})
-				for method in blastp_prophage_info.keys():
-					for prophage_region,hit_info in blastp_prophage_info[method].items():
-						if prophage_region not in save_prophage_hit_phage_dict[contig_id].keys():
-							save_prophage_hit_phage_dict[contig_id].update({prophage_region:[]})
-						prophage_homology_percent = prophage_file_blastp_dict[phage_id][contig_id][method][prophage_region]
-						# if (prophage_region=='1288022:1331541') and (phage_id=='GQ421471'):
-						# 	print(hit_info)
-						# 	print(prophage_homology_percent)
-						try:
-							#print(contig_id,phage_id,method,prophage_region)
-							prophage_identity =prophage_file_blastn_dict[phage_id][contig_id][method][prophage_region][0][0]
-							prophage_coverage = prophage_file_blastn_dict[phage_id][contig_id][method][prophage_region][0][1]
-						except:
-							prophage_identity = 0
-							prophage_coverage = 0
-						save_prophage_hit_phage_dict[contig_id][prophage_region].append([phage_id,phage_def,prophage_homology_percent,prophage_identity,prophage_coverage]) 
-
-
-			if phage_id in prophage_blastn_dict[contig_id].keys():
-				blastn_prophage_info = prophage_blastn_dict[contig_id][phage_id]
-				contig_id = contig_id.split('.')[0]
-				if contig_id not in save_prophage_hit_phage_dict.keys():
-					save_prophage_hit_phage_dict.update({contig_id:{}})
-				for method in blastn_prophage_info.keys():
-					for region,hit_infos in blastn_prophage_info[method].items():
-						if region not in save_prophage_hit_phage_dict[contig_id].keys():
-							save_prophage_hit_phage_dict[contig_id].update({region:[]})
-							region_identity = hit_infos[1]
-							region_coverage = hit_infos[2]
+			if contig_id in prophage_blastp_dict.keys():
+				if phage_id in prophage_blastp_dict[contig_id].keys():
+					blastp_prophage_info = prophage_blastp_dict[contig_id][phage_id]
+					print(blastp_prophage_info)
+					if contig_id not in save_prophage_hit_phage_dict.keys():
+						save_prophage_hit_phage_dict.update({contig_id:{}})
+					for method in blastp_prophage_info.keys():
+						for prophage_region,hit_info in blastp_prophage_info[method].items():
+							if prophage_region not in save_prophage_hit_phage_dict[contig_id].keys():
+								save_prophage_hit_phage_dict[contig_id].update({prophage_region:[]})
+							prophage_homology_percent = prophage_file_blastp_dict[phage_id][contig_id][method][prophage_region]
+							if (prophage_region=='2652209:2659269') and (phage_id=='KU052037'):
+								print(hit_info)
+								print(prophage_homology_percent)
 							try:
-								prophage_homology_percent = prophage_file_blastp_dict[phage_id][contig_id][method][region]
+								#print(contig_id,phage_id,method,prophage_region)
+								prophage_identity =prophage_file_blastn_dict[phage_id][contig_id][method][prophage_region][0][0]
+								prophage_coverage = prophage_file_blastn_dict[phage_id][contig_id][method][prophage_region][0][1]
 							except:
-								#print(phage_id,contig_id,method,prophage_region)
-								prophage_homology_percent = 0
-							# if (region=='1288022:1331541') and (phage_id=='GQ421471'):
-							# 	print(hit_infos)
-							# 	print(prophage_homology_percent)
-							save_prophage_hit_phage_dict[contig_id][region].append([phage_id,phage_def,prophage_homology_percent,region_identity,region_coverage])
+								prophage_identity = 0
+								prophage_coverage = 0
+							save_prophage_hit_phage_dict[contig_id][prophage_region].append([phage_id,phage_def,prophage_homology_percent,prophage_identity,prophage_coverage]) 
+
+			if contig_id in prophage_blastn_dict.keys():
+				if phage_id in prophage_blastn_dict[contig_id].keys():
+					blastn_prophage_info = prophage_blastn_dict[contig_id][phage_id]
+					contig_id = contig_id.split('.')[0]
+					if contig_id not in save_prophage_hit_phage_dict.keys():
+						save_prophage_hit_phage_dict.update({contig_id:{}})
+					for method in blastn_prophage_info.keys():
+						for region,hit_infos in blastn_prophage_info[method].items():
+							if region not in save_prophage_hit_phage_dict[contig_id].keys():
+								save_prophage_hit_phage_dict[contig_id].update({region:[]})
+								region_identity = hit_infos[1]
+								region_coverage = hit_infos[2]
+								try:
+									prophage_homology_percent = prophage_file_blastp_dict[phage_id][contig_id][method][region]
+								except:
+									#print(phage_id,contig_id,method,prophage_region)
+									prophage_homology_percent = 0
+								# if (region=='1288022:1331541') and (phage_id=='GQ421471'):
+								# 	print(hit_infos)
+								# 	print(prophage_homology_percent)
+								save_prophage_hit_phage_dict[contig_id][region].append([phage_id,phage_def,prophage_homology_percent,region_identity,region_coverage])
 	counter = 1
 	#print(save_prophage_hit_phage_dict)
 	for contig_id in save_prophage_hit_phage_dict.keys():		
 		for prophage_region in save_prophage_hit_phage_dict[contig_id].keys():
 			for hit_phage_info in save_prophage_hit_phage_dict[contig_id][prophage_region]:
+				if contig_id+'_'+prophage_region not in all_prophage_info_dict.keys():
+					continue
 				prophage_info = all_prophage_info_dict[contig_id+'_'+prophage_region]
 				phage_id = hit_phage_info[0]
 				#print(phage_id,contig_id,prophage_region)
@@ -2056,11 +2062,11 @@ def prophage_annotate_phage(prophage_region_file,prophage_protein_file,prophage_
 	
 	#step4:get the feature
 	prophage_blastp_dict = os.path.join(outdir,'prophage_blastp_phage_result_dict.npy')
-	prophage_blastn_dict = os.path.join(outdir,'prophage_blastp_phage_result_dict.npy')
+	prophage_blastn_dict = os.path.join(outdir,'prophage_blastn_phage_result_dict.npy')
 	try:
 		get_bac_phage_feature(prophage_region_file,prophage_blastp_dict,prophage_blastn_dict,outdir,prefix)
 	except:
-		print('extract prophage feature Error!')
+		print('no phage detected!')
 
 def	annotate_prophage_region(strain_id,prophage_region_file,prophage_protein_file,prophage_nucl_file,annotate_outdir,add_annotation,prefix):
 	if add_annotation == 'PGPD':
@@ -2094,7 +2100,7 @@ def	annotate_prophage_region(strain_id,prophage_region_file,prophage_protein_fil
 			print('%s does not exist'%add_annotation)
 			sys.exit(1)
 
-def visualize(save_prophage_file,save_prophage_nucl_file,save_prophage_protein_file,prophage_region_annotate_dir,add_annotation,templeate_file,save_html_file):
+def visualize(save_prophage_file,save_prophage_nucl_file,save_prophage_protein_file,prophage_region_annotate_dir,add_annotation,templeate_file,save_html_file,prefix):
 	prophage_nucl_dict = {}
 	with open(save_prophage_nucl_file) as f:
 		contents = f.read().strip().split('>')	
@@ -2471,6 +2477,7 @@ def visualize(save_prophage_file,save_prophage_nucl_file,save_prophage_protein_f
 
 def predict_prophage(strain_id,inputfile_bac,outdir,add_annotation,prefix):
 	start = time.time()
+	
 	#step1:get the proteins in bacterial genome,annotate genome using prokka if in fasta format, else extract proteins
 	print('step1:extract or predict the proteins in bacterial genome')
 	protein_dir = os.path.join(outdir,'protein_annotation')
@@ -2545,7 +2552,7 @@ def predict_prophage(strain_id,inputfile_bac,outdir,add_annotation,prefix):
 	command = "cp -r "+static_dir+" "+outdir
 	os.system(command)
 	save_html_file = os.path.join(outdir,prefix+'_prophage_visualization.html')
-	visualize(save_prophage_file,save_prophage_nucl_file,save_prophage_protein_file,prophage_region_annotate_dir,add_annotation,templeate_file,save_html_file)
+	visualize(save_prophage_file,save_prophage_nucl_file,save_prophage_protein_file,prophage_region_annotate_dir,add_annotation,templeate_file,save_html_file,prefix)
 	
 	end = time.time()
 	run_time = str(float((end-start))/60)
