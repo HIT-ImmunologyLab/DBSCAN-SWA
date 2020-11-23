@@ -322,8 +322,6 @@ def predict_prophage_swa(protein_file,blastp_file,outdir,k,prefix):#choose these
 	f2.close()
 
 def GetFaaSequenc(fileName,saveFaaPath,prefix,add_genome_id='no'):   #parse special protein from genbank files in phaster
-	print(prefix)
-	print(saveFaaPath)
 	special_pros = ['capsid','head','plate','tail','coat','portal','holin','integrase','transposase','terminase','protease','lysis','bacteriocin','tRNA']
 	records = SeqIO.parse(fileName, "gb")
 	fileID = fileName.split('/')[-1]
@@ -577,7 +575,7 @@ def get_inf1(file):
 		strain_def = record.description
 	return strain_id,strain_def,type
 
-def get_inf(file,outdir):
+def get_inf(file,outdir,prefix='bac'):
 	with open(file) as f:
 		contents = f.read().strip()
 	if contents[0]=='>':
@@ -588,13 +586,15 @@ def get_inf(file,outdir):
 			strain_def = record.description
 			strain_info_dict = {genome_id.split()[0].split('.')[0]:strain_def}
 		except:
-			strain_info_dict,strain_sequence_dict  = get_strain_info(file,outdir)
+			strain_info_dict,strain_sequence_dict  = get_strain_info(file,outdir,prefix)
 	else:
 		type="genbank"
-		record = SeqIO.read(file,"genbank")
-		genome_id = record.id
-		strain_def = record.description
-		strain_info_dict = {genome_id.split()[0].split('.')[0]:strain_def}
+		strain_info_dict = split_genbank(file,outdir,prefix)		
+		# record = SeqIO.read(file,"genbank")
+		# genome_id = record.id
+		# strain_def = record.description
+		# strain_info_dict = {genome_id.split()[0].split('.')[0]:strain_def}
+	
 	strain_inf_dict_file = os.path.join(outdir,'strain_inf_dict')
 	np.save(strain_inf_dict_file,strain_info_dict)
 	return strain_info_dict,type
@@ -1272,7 +1272,10 @@ def decide_boundary(strain_id,bac_fna_file,bac_faa_file,prophage_region_detail_f
 	f_save_prophage_nucl.close()
 	f_save.close()
 
-def get_strain_info(file,outdir):
+def get_strain_info(file,outdir,prefix):
+	multi_dir = os.path.join(outdir,'results')
+	mkdir(multi_dir)
+	
 	#fasta or multi-fasta
 	strain_file = os.path.join(outdir,'strain_inf.txt')
 	f_result = open(strain_file,'w')
@@ -1280,6 +1283,7 @@ def get_strain_info(file,outdir):
 	strain_sequence_dict = {}
 	with open(file) as f:
 		contents = f.read().strip()
+	counter  =0
 	if '\n>' in contents:		
 		for strain in contents.split('\n>'):
 			strain_title = strain.split('\n')[0].strip()
@@ -1290,6 +1294,13 @@ def get_strain_info(file,outdir):
 			f_result.flush()
 			sequence = ''.join(strain.split('\n')[1:]).strip()
 			strain_sequence_dict.update({genome_id.split('.')[0]:sequence})
+			c_outdir = os.path.join(multi_dir,prefix+'_'+str(counter))
+			c_prefix = prefix+'_'+str(counter)
+			mkdir(c_outdir)
+			c_inputfile_bac = os.path.join(c_outdir,prefix+'_'+str(counter)+'.fna')
+			with open(c_inputfile_bac,'w') as f:
+				f.write('>'+strain_title.strip()+'\n'+sequence.strip())
+			counter = counter+1
 	else:
 		strain_title = contents.split('\n')[0].strip()
 		genome_id = strain_title.split()[0].strip('>')
@@ -1301,28 +1312,6 @@ def get_strain_info(file,outdir):
 		strain_sequence_dict.update({genome_id.split('.')[0]:sequence})
 	f_result.close()
 	return strain_inf_dict,strain_sequence_dict
-
-def get_inf(file,outdir):
-	with open(file) as f:
-		contents = f.read().strip()
-	if contents[0]=='>':
-		type ='fasta'
-		try:
-			record = SeqIO.read(file,"fasta")
-			strain_id = record.id
-			strain_def = record.description
-			strain_info_dict = {strain_id.split()[0].split('.')[0]:strain_def}
-		except:
-			strain_info_dict,strain_sequence_dict = get_strain_info(file,outdir)
-	else:
-		type="genbank"
-		record = SeqIO.read(file,"genbank")
-		strain_id = record.id
-		strain_def = record.description
-		strain_info_dict = {strain_id.split()[0].split('.')[0]:strain_def}
-	strain_inf_dict_file = os.path.join(outdir,'strain_inf_dict')
-	np.save(strain_inf_dict_file,strain_info_dict)
-	return strain_info_dict,type
 
 def annotate_bacteria_fasta(fasta_file,outdir,prefix,kingdom):
 	prokka_path = os.path.join(root_path,'software','prokka','bin','prokka')
@@ -2543,7 +2532,7 @@ def predict_prophage(strain_id,inputfile_bac,outdir,add_annotation,prefix):
 			phage_type = 'fasta'
 			phage_inf_dict = np.load(os.path.join(root_path,'db','profiles','phage_inf_dict.npy')).item()
 		else:
-			phage_inf_dict,phage_type = get_inf(add_annotation,prophage_region_annotate_dir)
+			phage_inf_dict,phage_type = get_inf(add_annotation,prophage_region_annotate_dir,prefix)
 		print('step7:start to annotate the predicted prophage regions')
 		annotate_prophage_region(strain_id,save_prophage_file,save_prophage_protein_file,save_prophage_nucl_file,prophage_region_annotate_dir,add_annotation,prefix)
 	else:
@@ -2573,6 +2562,85 @@ class MyThread(threading.Thread):
 	def run(self):
 		predict_prophage(self.strain_id,self.inputfile_bac,self.c_outdir,self.add_annotation,self.c_prefix)
 
+def getFaaFromGB(gb_file_path,faa_file_path):
+	records = SeqIO.parse(gb_file_path, "gb")
+	if os.path.exists(faa_file_path):
+		os.remove(faa_file_path)
+	savefile = open(faa_file_path, 'w')
+	for record in records:
+		fileID = record.id
+		prot_num = 0
+		for feature in record.features:
+			if feature.type == 'CDS':
+				prot_num = prot_num + 1
+				location = feature.location
+				if str(location).find('+') != -1:
+					direction = '+'
+				elif str(location).find('-') != -1:
+					direction = '-1'
+				if feature.type == 'CDS':
+					if 'product' in feature.qualifiers:
+						product = feature.qualifiers['product'][0]
+						if ' ' in product:
+							product = product.replace(' ','_')
+						else:
+							product = 'unkown'
+					else:
+						product = 'unknown'
+				else:
+					product = 'unkown'
+				if 'protein_id' in feature.qualifiers:
+					proteinId = feature.qualifiers['protein_id'][0]
+				else:
+					if 'inference' in feature.qualifiers:
+						strInference = str(feature.qualifiers['inference'])
+						if 'RefSeq' in strInference:
+							proteinId = strInference.split('RefSeq:')[1].rstrip(']').rstrip('\'')
+						elif 'SwissProt' in strInference:
+							proteinId = strInference.split('SwissProt:')[1].rstrip(']').rstrip('\'')
+						else:
+							proteinId = 'unknown'
+					else:
+					    proteinId = 'unknown'
+				if 'translation' in feature.qualifiers:
+					translation = feature.qualifiers['translation'][0]
+				else:
+					translation = 'unkown'
+				savefile.write('>ref' + '|'+fileID+'|'+proteinId+'|'+str(location)+'|'+str(product)+ '|'+str(prot_num)+'\n')
+				if translation[-1] == '\n':
+					savefile.write(translation)
+				else:
+					savefile.write(translation + '\n')
+	savefile.close()
+def getFnaFromGB(gb_file_path,fa_file_path):
+	handle = open(gb_file_path)
+	if os.path.exists(fa_file_path):
+		os.remove(fa_file_path)
+	SeqIO.convert(handle, 'genbank', fa_file_path, 'fasta')
+def split_genbank(gb_file,outdir,prefix):
+	strain_info_dict = {}
+	
+	multi_dir = os.path.join(outdir,'results')
+	records = SeqIO.parse(gb_file, "gb")
+	strain_proteins = ''
+	counter = 0
+	for record in records:
+		strain_id = record.id
+		strain_def = record.description
+		strain_info_dict.update({strain_id.split()[0].split('.')[0]:strain_def})
+		c_outdir = os.path.join(multi_dir,prefix+'_'+str(counter))
+		c_prefix = prefix+'_'+str(counter)
+		mkdir(c_outdir)
+		contig_file = os.path.join(c_outdir,prefix+'_'+str(counter)+'.gb')
+		SeqIO.write(record,contig_file, "gb")
+		contig_faa_file = os.path.join(c_outdir,prefix+'_'+str(counter)+'.faa')
+		contig_fa_file = os.path.join(c_outdir,prefix+'_'+str(counter)+'.fa')
+		if not os.path.exists(contig_faa_file):
+			getFaaFromGB(contig_file, contig_faa_file)
+		if not os.path.exists(contig_fa_file):
+			(contig_file, contig_fa_file)
+		counter = counter+1
+	return strain_info_dict
 
 
 if __name__=='__main__':
@@ -2692,33 +2760,39 @@ if __name__=='__main__':
 			sys.exit(-1)
 	
 	global strain_inf_dict,type
-	strain_inf_dict,type = get_inf(inputfile_bac,outdir)
+	strain_inf_dict,type = get_inf(inputfile_bac,outdir,prefix)
 	if len(list(strain_inf_dict.keys()))==1:
 		strain_id = list(strain_inf_dict.keys())[0]
 		predict_prophage(strain_id,inputfile_bac,outdir,add_annotation,prefix)
 	else:
-		counter = 1
+		counter = 0
 		tsk = []
 		multi_dir = os.path.join(outdir,'results')
 		mkdir(multi_dir)
-		c_strain_dict,strain_sequence_dict = get_strain_info(inputfile_bac,outdir)
-		for strain_id in c_strain_dict.keys():
+		print(strain_inf_dict)
+		for strain_id in strain_inf_dict.keys():
 			c_outdir = os.path.join(multi_dir,prefix+'_'+str(counter))
 			c_prefix = prefix+'_'+str(counter)
 			mkdir(c_outdir)
-			c_inputfile_bac = os.path.join(c_outdir,prefix+'_'+str(counter)+'.fna')
-			with open(c_inputfile_bac,'w') as f:
-				f.write('>'+strain_id+' '+strain_inf_dict[strain_id]+'\n'+strain_sequence_dict[strain_id]+'\n')
+			print(counter)
+			c_inputfile_bac = os.path.join(c_outdir,prefix+'_'+str(counter)+'.gb')
+			c_inputfile_bac_protein = os.path.join(c_outdir,prefix+'_'+str(counter)+'.faa')
+			if not os.path.exists(c_inputfile_bac):
+				c_inputfile_bac = os.path.join(c_outdir,prefix+'_'+str(counter)+'.fna')
+			if not os.path.exists(c_inputfile_bac_protein):
+				c_inputfile_bac = os.path.join(c_outdir,prefix+'_'+str(counter)+'.fna')
+			else:
+				if os.path.getsize(c_inputfile_bac_protein)==0:
+					c_inputfile_bac = os.path.join(c_outdir,prefix+'_'+str(counter)+'.fna')
+			# with open(c_inputfile_bac,'w') as f:
+			# 	f.write('>'+strain_id+' '+strain_inf_dict[strain_id]+'\n'+strain_sequence_dict[strain_id]+'\n')
 			pro_file = os.path.join(c_outdir,'protein_annotation',c_prefix+'_protein.faa')
 			if os.path.getsize(c_inputfile_bac)>0:
-			#try:
-				tsk.append(MyThread(strain_id,c_inputfile_bac,c_outdir,add_annotation,c_prefix))
-			# except:
-			# 	print('Error: unable to start thread')
+				tsk.append(MyThread(strain_id,c_inputfile_bac,c_outdir,add_annotation,c_prefix))			
 			counter = counter+1
 		for t in tsk:
 			t.start()
-			time.sleep(1)
+			#time.sleep(1)
 			while True:
 				if (len(threading.enumerate()) <= int(thread_num)):
 					break
@@ -2739,7 +2813,7 @@ contig_id\tcontig_def\tgenome_size\tprophage_start\tprophage_end\tkey_proteins\t
 		save_file_nucl = os.path.join(outdir,prefix+'_DBSCAN-SWA_prophage.fna')
 		f_save_nucl = open(save_file_nucl,'w')
 		
-		for counter in range(1,len(list(c_strain_dict.keys()))+1):
+		for counter in range(0,len(list(strain_inf_dict.keys()))):
 			c_outdir = os.path.join(multi_dir,prefix+'_'+str(counter))
 			c_prefix = prefix+'_'+str(counter)
 			c_prophage_file = os.path.join(c_outdir,c_prefix+'_DBSCAN-SWA_prophage_summary.txt')
