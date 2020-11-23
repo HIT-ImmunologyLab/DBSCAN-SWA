@@ -32,7 +32,7 @@ which makeblastdb
 - step2:add the [download_path]/bin to your environment.
 - step3: test DBSCAN-SWA in command line
 ```
-dbscan-swa --h
+python <path>/dbscan-swa.py --h
 ```
 ## Usage
 DBSCAN-SWA is an integrated tool for detection of prophages, providing a series of analysis including ORF prediction and genome annotation, phage-like gene clusters detection, attachments site identification and infecting phages annotation
@@ -59,20 +59,7 @@ Phage Annotation:
 -cov <x>                   : Minimal % coverage of hit region on hit prophage region by making blastn(default:30)
 ```
 ### Start DBSCAN-SWA
-1.predict prophages of query bacterium with default parameters:
 
-```
-dbscan-swa --input <bac_path> --output <outdir> --prefix <prefix>
-```
-2. predict prophages of query bacterium and no phage annotation:
-```
-dbscan-swa --input <bac_path> --output <outdir> --prefix <prefix> --add_annotation none
-```
-3. predict prophages of query bacterium and detect the bacterium-phage interaction between the query bacterium and query phage:
-```
-dbscan-swa --input <bac_path> --output <outdir> --prefix <prefix> --add_annotation <phage_path>
-```
-### Experts
 The python script is also provided for expert users<br>
 1.predict prophages of query bacterium with default parameters:
 
