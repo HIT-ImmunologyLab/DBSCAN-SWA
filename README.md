@@ -43,9 +43,12 @@ which makeblastdb
 ## Install ##
 #### Linux
 - step1:Download the whole packages and partial profiles from [https://github.com/HIT-ImmunologyLab/DBSCAN-SWA](https://github.com/HIT-ImmunologyLab/DBSCAN-SWA)
+```
+get clone https://github.com/HIT-ImmunologyLab/DBSCAN-SWA
+```
 - step2:add the [download_path]/bin to your environment.
 ```
-export PATH=/path/to/ncbi-blast-2.10.0+/bin:$PATH
+export PATH=$PATH:/path/to/DBSCAN-SWA/software/blast+/bin:$PATH
 export PATH=$PATH:/path/to/DBSCAN-SWA/bin
 export PATH=$PATH:/path/to/DBSCAN-SWA/software/diamond
 export PATH=$PATH:/path/to/prokka/bin
