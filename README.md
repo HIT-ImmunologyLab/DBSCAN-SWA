@@ -55,7 +55,7 @@ export PATH=$PATH:/path/to/prokka/bin
 ```
 - step3:grant permission to run the softwares.
 ```
-chmod u+x -R /path/to/DBSCAN-SWA/bin/dbscan-swa
+chmod u+x -R /path/to/DBSCAN-SWA/bin
 chmod u+x -R /path/to/DBSCAN-SWA/software
 ```
 - step4: test DBSCAN-SWA in command line
