@@ -21,6 +21,20 @@ First, please install the following python packages:
 
 Second, please install the following tools:
 1. Prokka in https://github.com/tseemann/prokka<br>
+```
+git clone https://github.com/tseemann/prokka.git
+# install the dependencies:
+sudo apt-get -y install bioperl libdatetime-perl libxml-simple-perl libdigest-md5-perl
+# install perl package
+sudo bash
+export PERL_MM_USE_DEFAULT=1
+export PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
+perl -MCPAN -e 'install "XML::Simple"'
+# install the prokka databases
+prokka --setupdb
+# test the installed prokka databases
+prokka --listdb
+```
 **warning**: Prokka needs blast+ 2.8 or higher, so we provide the version of blast+ in bin directory, the users can install a latest blast+ and add it to the environment or use the blast+ provided by DBSCAN-SWA. Please ensure the usage of blast+ in your environment by eg: 
 ```
 which makeblastdb
@@ -30,7 +44,18 @@ which makeblastdb
 #### Linux
 - step1:Download the whole packages and partial profiles from [https://github.com/HIT-ImmunologyLab/DBSCAN-SWA](https://github.com/HIT-ImmunologyLab/DBSCAN-SWA)
 - step2:add the [download_path]/bin to your environment.
-- step3: test DBSCAN-SWA in command line
+```
+export PATH=/path/to/ncbi-blast-2.10.0+/bin:$PATH
+export PATH=$PATH:/path/to/DBSCAN-SWA/bin
+export PATH=$PATH:/path/to/DBSCAN-SWA/software/diamond
+export PATH=$PATH:/path/to/prokka/bin
+```
+- step3:grant permission to run the softwares.
+```
+chmod u+x -R /path/to/DBSCAN-SWA/bin/dbscan-swa
+chmod u+x -R /path/to/DBSCAN-SWA/software
+```
+- step4: test DBSCAN-SWA in command line
 ```
 python <path>/dbscan-swa.py --h
 ```
