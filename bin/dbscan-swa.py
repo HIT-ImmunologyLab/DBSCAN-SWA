@@ -8,7 +8,7 @@ import threading
 import time
 import sys
 import multiprocessing
-
+import json
 def inputinstructions():
 	return """
 Usage: DBSCAN-SWA [options]
@@ -596,7 +596,8 @@ def get_inf(file,outdir,prefix='bac'):
 		# strain_info_dict = {genome_id.split()[0].split('.')[0]:strain_def}
 	
 	strain_inf_dict_file = os.path.join(outdir,'strain_inf_dict')
-	np.save(strain_inf_dict_file,strain_info_dict)
+	# np.save(strain_inf_dict_file,strain_info_dict)
+	save_dict(strain_info_dict,strain_inf_dict_file)
 	return strain_info_dict,type
 
 def get_protein_to_position_genbank(pro_file,start,end,outfile,method,strain_id):
@@ -1106,7 +1107,7 @@ def decide_boundary(strain_id,bac_fna_file,bac_faa_file,prophage_region_detail_f
 	bac_protein_def_dict = get_protein_def(bac_protein_def_file)
 	f_save = open(save_prophage_file,'w')
 	f_save_summary = open(save_prophage_summary_file,'w')
-	f_save_summary.write('bacteria_id\tbac_def\tgenome_size\tprophage_start\tprophage_end\tkey_proteins\tbest_hit_species\tCDS_number\tattl_region\tattr_region\n')
+	f_save_summary.write('bacteria_id\tbacteria_def\tgenome_size\tprophage_start\tprophage_end\tkey_proteins\tbest_hit_species\tCDS_number\tattl_region\tattr_region\n')
 	f_save_prophage_protein = open(save_prophage_protein_file,'w')
 	f_save_prophage_nucl = open(save_prophage_nucl_file,'w')
 	#boundary locating
@@ -1206,9 +1207,9 @@ def decide_boundary(strain_id,bac_fna_file,bac_faa_file,prophage_region_detail_f
 			
 			f_save.write('>prophage '+str(region_index+1)+'\n')
 			
-			f_save.write('\t'.join(bac_info)+'\t'+'\t'.join([prophage_start,prophage_end,key_words,hit_mf,str(prophage_pro_num),wide_attl,wide_attr])+'\n')
+			f_save.write('\t'.join(bac_info).strip()+'\t'+'\t'.join([prophage_start,prophage_end,key_words,hit_mf,str(prophage_pro_num),wide_attl,wide_attr])+'\n')
 			f_save.flush()
-			f_save_summary.write('\t'.join(bac_info)+'\t'+'\t'.join([prophage_start,prophage_end,key_words,hit_mf,str(prophage_pro_num),wide_attl,wide_attr])+'\n')	
+			f_save_summary.write('\t'.join(bac_info).strip()+'\t'+'\t'.join([prophage_start,prophage_end,key_words,hit_mf,str(prophage_pro_num),wide_attl,wide_attr])+'\n')	
 			f_save_summary.flush()
 			attl_flag = len(att_infos)
 			attr_flag = len(att_infos)
@@ -1490,7 +1491,7 @@ prophage_protein_ID\tprophage_protein_product\tkey_proteins\thit_protein_id\thit
 		f_save_nucl.write('>'+strain_id+'|'+inf['place']+":"+inf['end']+'|DBSCAN-SWA'+'\n'+fna_sequence_region+'\n')
 		f_save_nucl.flush()
 		region_faa_file = os.path.join(region_dir,'prophage_region.faa')
-		region_pro_sequence_list,prophage_pro_num = get_protein_to_position_genbank(bac_faa_file,inf['place'],inf['end'],region_faa_file,'DBSCAN-SWA')
+		region_pro_sequence_list,prophage_pro_num = get_protein_to_position_genbank(bac_faa_file,inf['place'],inf['end'],region_faa_file,'DBSCAN-SWA',strain_id)
 		for pro_index,this_pro in enumerate(region_pro_sequence_list[0::2]):
 			# print(this_pro)
 			#print(region_pro_sequence_list[pro_index*2+1])
@@ -1572,6 +1573,19 @@ def combine(lst):
 	combinedList.append(templist)
 	return combinedList
 
+def save_dict(my_dict,save_file):
+	js = json.dumps(my_dict) 
+	file = open(save_file, 'w') 
+	file.write(js) 
+	file.close()  
+
+def load_dict(save_file):
+	file = open(save_file, 'r') 
+	protein_js = file.read()
+	file.close()
+	my_dict = json.loads(protein_js)
+	return my_dict
+
 def parse_prophage_blastp_phagedb_6(outfile,outdir):
 	result_dict = {}
 	outfile_dict = os.path.join(outdir,'prophage_blastp_phage_result_dict')
@@ -1629,7 +1643,8 @@ def parse_prophage_blastp_phagedb_6(outfile,outdir):
 					prophage_id = '|'.join(hit_infos[0][0].split('|')[0:2]+hit_infos[0][0].split('|')[-2:])
 					f_result.write('\t'.join([bac_id,bac_def,prophage_id,phage_id,phage_def,str(region_pro_num),str(percent),str(len(hit_infos))])+'\n')
 					f_result.flush()
-	np.save(outfile_dict,result_dict1)
+	# np.save(outfile_dict,result_dict1)
+	save_dict(result_dict1,outfile_dict)
 	f_result.close()
 
 def parse_prophage_blastn_phagedb_6(outfile,outdir):
@@ -1704,7 +1719,8 @@ def parse_prophage_blastn_phagedb_6(outfile,outdir):
 						result_dict1[bac_id][phage_id][method][region] = [prophage_id,identity,coverage,hit_infos]
 					f_result.write('\t'.join([bac_id,bac_def,hit_prophage,phage_id,phage_def,str(prophage_length),str(hit_length),str(identity),str(coverage)])+'\n')
 					f_result.flush()
-	np.save(outfile_dict,result_dict1)
+	# np.save(outfile_dict,result_dict1)
+	save_dict(result_dict1,outfile_dict)
 	f_result.close()
 
 def filter_identity_coverage(blastp_file,filter_file,target):
@@ -1903,11 +1919,11 @@ def get_bac_phage_feature(prophage_region_file,prophage_blastp_dict_file,prophag
 	prophage_blastp_dict = {}
 	prophage_blastn_dict = {}
 	try:
-		prophage_blastp_dict = np.load(prophage_blastp_dict_file).item()
+		prophage_blastp_dict = load_dict(prophage_blastp_dict_file)
 	except:
 		pass
 	try:
-		prophage_blastn_dict = np.load(prophage_blastn_dict_file).item()
+		prophage_blastn_dict = load_dict(prophage_blastn_dict_file)
 	except:
 		pass
 	# print(prophage_blastp_dict)
@@ -2085,7 +2101,7 @@ def	annotate_prophage_region(strain_id,prophage_region_file,prophage_protein_fil
 					print('parse %s error!'%add_annotation)
 					sys.exit(1)
 			else:
-				record = SeqIO.read(file,"genbank")
+				record = SeqIO.read(add_annotation,"genbank")
 				phage_id = record.id
 				phage_id = phage_id.split('.')[0]
 				phage_nucl_file = os.path.join(annotate_outdir,'phage.fna')
@@ -2531,13 +2547,13 @@ def predict_prophage(strain_id,inputfile_bac,outdir,add_annotation,prefix):
 	
 	#step7:annotate prophage region
 	prophage_region_annotate_dir = os.path.join(outdir,'prophage_annotation')
-	
+	mkdir(prophage_region_annotate_dir)
 	if add_annotation!='none':
 		mkdir(prophage_region_annotate_dir)
 		global phage_inf_dict,phage_type
 		if add_annotation=='PGPD':
 			phage_type = 'fasta'
-			phage_inf_dict = np.load(os.path.join(root_path,'db','profiles','phage_inf_dict.npy')).item()
+			phage_inf_dict = load_dict(os.path.join(root_path,'db','profiles','phage_inf_dict.txt'))
 		else:
 			phage_inf_dict,phage_type = get_inf(add_annotation,prophage_region_annotate_dir,prefix)
 		print('step7:start to annotate the predicted prophage regions')
@@ -2619,11 +2635,13 @@ def getFaaFromGB(gb_file_path,faa_file_path):
 				else:
 					savefile.write(translation + '\n')
 	savefile.close()
+
 def getFnaFromGB(gb_file_path,fa_file_path):
 	handle = open(gb_file_path)
 	if os.path.exists(fa_file_path):
 		os.remove(fa_file_path)
 	SeqIO.convert(handle, 'genbank', fa_file_path, 'fasta')
+
 def split_genbank(gb_file,outdir,prefix):
 	strain_info_dict = {}
 	
@@ -2754,7 +2772,7 @@ if __name__=='__main__':
 			flag = 1
 	if flag ==0:
 		print('You are running DBSCAN-SWA first time, the database will be downloaded in %s'%database)
-		command = "wget -P %s http://www.microbiome-bigdata.com/static/download/DBSCAN-SWA/db.tar.gz"%database
+		command = "wget -P %s http://www.microbiome-bigdata.com/PHISDetector/static/download/DBSCAN-SWA/db.tar.gz"%database
 		os.system(command)
 		gz_db_file = os.path.join(database,'db.tar.gz')
 		if os.path.exists(gz_db_file):
@@ -2763,7 +2781,7 @@ if __name__=='__main__':
 			command = "rm -f "+gz_db_file
 			os.system(command)
 		else:
-			print('download error!please download from http://www.microbiome-bigdata.com/static/download/DBSCAN-SWA/db.tar.gz')
+			print('download error!please download from http://www.microbiome-bigdata.com/PHISDetector/static/download/DBSCAN-SWA/db.tar.gz')
 			sys.exit(-1)
 	
 	global strain_inf_dict,type
@@ -2807,7 +2825,7 @@ if __name__=='__main__':
 			t.join()
 		save_file = os.path.join(outdir,prefix+'_DBSCAN-SWA_prophage_summary.txt')
 		f_save = open(save_file,'w')
-		f_save.write('prefix\tcontig_id\tcontig_def\tgenome_size\tprophage_start\tprophage_end\tkey_proteins\tbest_hit_species\tCDS_number\tattl_region\tattr_region\n')
+		f_save.write('prefix\tbacteria_id\tbacteria_def\tgenome_size\tprophage_start\tprophage_end\tkey_proteins\tbest_hit_species\tCDS_number\tattl_region\tattr_region\n')
 		f_save.flush()
 		save_file_detail = os.path.join(outdir,prefix+'_DBSCAN-SWA_prophage.txt')
 		f_save_detail = open(save_file_detail,'w')
