@@ -44,7 +44,7 @@ which makeblastdb
 #### Linux
 - step1:Download the whole packages and partial profiles from [https://github.com/HIT-ImmunologyLab/DBSCAN-SWA](https://github.com/HIT-ImmunologyLab/DBSCAN-SWA)
 ```
-get clone https://github.com/HIT-ImmunologyLab/DBSCAN-SWA
+git clone https://github.com/HIT-ImmunologyLab/DBSCAN-SWA
 ```
 - step2:add the [download_path]/bin to your environment.
 ```
