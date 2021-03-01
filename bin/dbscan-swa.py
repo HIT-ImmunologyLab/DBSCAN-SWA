@@ -37,13 +37,13 @@ def get_root_path():
 	root_path = ""
 	for folder in pathfolders:
 		try:
-			if ("dbscan-swa" in os.listdir(folder)) and ('makeblastdb' in os.listdir(folder)):
+			if ("dbscan-swa.py" in os.listdir(folder)) and ('makeblastdb' in os.listdir(folder)):
 				root_path = os.path.dirname(folder)
 				break
 		except:
 			pass
 	try:
-		if root_path == "" and os.sep in sys.argv[0] and "dbscan-swa" in os.listdir(sys.argv[0].rpartition(os.sep)[0]) and "makeblastdb" in os.listdir(sys.argv[0].rpartition(os.sep)[0]):
+		if root_path == "" and os.sep in sys.argv[0] and "dbscan-swa.py" in os.listdir(sys.argv[0].rpartition(os.sep)[0]) and "makeblastdb" in os.listdir(sys.argv[0].rpartition(os.sep)[0]):
 			root_path = os.path.dirname(sys.argv[0].rpartition(os.sep)[0])
 			#os.chdir(root_path)
 	except:
