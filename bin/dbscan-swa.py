@@ -2556,7 +2556,7 @@ def predict_prophage(strain_id,inputfile_bac,outdir,add_annotation,prefix):
 		global phage_inf_dict,phage_type
 		if add_annotation=='PGPD':
 			phage_type = 'fasta'
-			phage_inf_dict = np.load(os.path.join(root_path,'db','profiles','phage_inf_dict.npy')).item()
+			phage_inf_dict = load_js(os.path.join(root_path,'db','profiles','phage_inf_dict.txt'))
 		else:
 			phage_inf_dict,phage_type = get_inf(add_annotation,prophage_region_annotate_dir)
 		print('step7:start to annotate the predicted prophage regions')
