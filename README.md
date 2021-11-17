@@ -1,4 +1,4 @@
-# DBSCAN-SWA: rapid prophage detection and annotation
+# DBSCAN-SWA: an integrated tool for rapid prophage detection and annotation
 ## Table of Contents
 - [Background](#background)
 - [Requirements](requirements)
