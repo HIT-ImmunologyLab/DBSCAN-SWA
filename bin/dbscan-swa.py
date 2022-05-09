@@ -221,7 +221,6 @@ def get_cluster_window(proteins_key,outdir,k):
 	f1.close()
 	f2.close()
 
-
 def get_faa_protein(protein_file):#choose these proteins that are not predicted in cluster
 	with open(protein_file) as f:
 		contents = f.read()
@@ -1758,6 +1757,9 @@ def prophage_annotate_phagedb(prophage_region_file,prophage_protein_file,prophag
 		m2.start()
 		m1.join()
 		m2.join()
+	else:
+		print('prophage protein file or nucleotide file was not created, no prophage was detected!!')
+		return(0)
 	time.sleep(1)
 	filter_file = os.path.join(outdir,'prophage_blastp_phage_identity_0.4_coverage_0.7')
 	filter_identity_coverage(outfile_blastp,filter_file,'query')
@@ -2348,146 +2350,148 @@ def visualize(save_prophage_file,save_prophage_nucl_file,save_prophage_protein_f
     <tbody>
 			''')
 		prophage_hit_phage_file = os.path.join(prophage_region_annotate_dir,prefix+'_prophage_annotate_phage_details.txt')
-	
-		with open(prophage_hit_phage_file) as f:
-			contents = f.read().strip().split('>PHIS')		
-		counter = 0
-		if len(contents)<2:
-			return 0
-		for phis in contents[1:]:
-			phis = phis.strip().split('\n')
-			phis_line = phis[1].strip().split('\t')
-			bac_id = phis_line[0]
-			hit_phage_id = phis_line[-5]
-			hit_phage_def = phis_line[-4]
-			prophage_id = bac_id+'|'+':'.join(phis_line[3:5])
-			prophage_counter = prophage_id_dict[prophage_id]
-			counter = counter+1
-			f_save.write('''
-			<tr>
-				<td>DBSCAN-SWA_%s</td>
-				<td>%s</td>
-      			<td><a href="https://www.ncbi.nlm.nih.gov/nuccore/%s">%s</a></td>
-      			<td>%s</td>
-      			<td>%s</td>
-      			<td>%s</td>
-      			'''%(prophage_counter,prophage_id,hit_phage_id,hit_phage_def,phis_line[-3],phis_line[-2],phis_line[-1]))
-			if len(phis)==2:
+		if os.path.exists(prophage_hit_phage_file):
+			with open(prophage_hit_phage_file) as f:
+				contents = f.read().strip().split('>PHIS')		
+			counter = 0
+			if len(contents)<2:
+				return 0
+			for phis in contents[1:]:
+				phis = phis.strip().split('\n')
+				phis_line = phis[1].strip().split('\t')
+				bac_id = phis_line[0]
+				hit_phage_id = phis_line[-5]
+				hit_phage_def = phis_line[-4]
+				prophage_id = bac_id+'|'+':'.join(phis_line[3:5])
+				prophage_counter = prophage_id_dict[prophage_id]
+				counter = counter+1
 				f_save.write('''
-				<td style="color:#F05555;font-size: 15px;">
-				<span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>
-				</td>
-				</tr>
-				''')
-			else:
-				f_save.write('''
-<td style="font-size: 13px;">
-<button data-toggle="modal" data-target="#DBSCAN-SWA_%s" style="background-color: #AD2417;color:white;width:50px;height:25px;border-radius: 5px;">detail</button>
-<div class="modal fade" id="DBSCAN-SWA_%s" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-    <div class="modal-content" style="width:800px;text-align:center;">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
-        <h4 class="modal-title" id="myModalLabel">Blastp and Blastn of %s VS %s</h4>
-      </div>
-      <div class="modal-body">
-        <div class="btn-group" data-toggle="buttons">
-        <table>
-        <tr>
-        <td id="blastp--DBSCAN-SWA_%s" style="font-size: 20px;border:2px solid #D8F2AF;text-align: center;" onclick="show(this.id)">
-         <button type="button" class="btn btn-default" style="vertical-align: center;font-size: 15px;padding-top: 10px;padding-bottom: 10px;">
-           blastp results
-        </button>
-        </td>       
-          <td id="blastn--DBSCAN-SWA_%s" style="font-size: 15px;border:2px solid #D8F2AF;text-align: center;" onclick="show(this.id)">
-          <button type="button" class="btn btn-default" style="vertical-align: center;font-size: 15px;padding-top: 10px;padding-bottom: 10px;">
-         blastn results
-        </button>
-        </td>
-       
-        </tr>
-        
-      </table>
-    </div>'''%(str(counter),str(counter),bac_id,hit_phage_id,str(counter),str(counter)))
-				f_save.write('''
-		<div id="blastp--DBSCAN-SWA_%s_result">
-        <table class="display" class="table table-striped table-hover table-bordered" style="text-align: center;">
-          <thead>
-          <tr>
-            <th>Prophage_Protein</th>
-            <th>Hit_Phage_Protein</th>
-            <th>Identity(%%)</th>
-            <th>Coverage</th>
-            <th style="word-break: keep-all;white-space:nowrap;">E-value</th>
-          </tr>
-          </thead>
-          <tbody>
-					'''%(str(counter)))
-				for blastp_info in phis[3:]:
-					if '#blastn' in blastp_info:
-						break
-					blastp_info = blastp_info.strip().split('\t')
+				<tr>
+					<td>DBSCAN-SWA_%s</td>
+					<td>%s</td>
+	      			<td><a href="https://www.ncbi.nlm.nih.gov/nuccore/%s">%s</a></td>
+	      			<td>%s</td>
+	      			<td>%s</td>
+	      			<td>%s</td>
+	      			'''%(prophage_counter,prophage_id,hit_phage_id,hit_phage_def,phis_line[-3],phis_line[-2],phis_line[-1]))
+				if len(phis)==2:
 					f_save.write('''
-		<tr>
-            <td style="word-break: break-all; word-wrap:break-word;">%s</td>
-            <td style="word-break: break-all; word-wrap:break-word;">%s</td>
-            <td>%s</td>
-            <td>%s</td>
-            <td style="word-break: keep-all;white-space:nowrap;">%s</td>
-        </tr>
-						'''%(blastp_info[1],blastp_info[3],blastp_info[4],blastp_info[5],blastp_info[6]))
-				f_save.write('''
-						</tbody>
-       				 </table>
-      				</div>
-						''')
-				f_save.write('''
-		<div id="blastn--DBSCAN-SWA_%s_result">      
-        <table class="display" class="table table-striped table-hover table-bordered">
-          <thead>
-          <tr>
-            <th>Hit_Prophage_Region</th>
-            <th>Hit_Phage_Region</th>
-            <th>Alignment Length</th>
-            <th>Identity</th>
-            <th>E-value</th>
-          </tr>
-          </thead>
-          <tbody>
-					'''%(str(counter)))
-				for blastn_info in '\n'.join(phis).split('#blastn')[-1].split('\n'):
-					if blastn_info.strip()!='':
-						blastn_info = blastn_info.strip().split('\t')
-						f_save.write('''
-		<tr>
-            <td style="word-break: break-all; word-wrap:break-word;">%s|%s</td>
-            <td>%s|%s</td>
-            <td>%s</td>            
-            <td>%s</td>
-            <td style="word-break: keep-all;white-space:nowrap;">%s</td>
-        </tr>
-			'''%(blastn_info[1],blastn_info[2],hit_phage_id,blastn_info[4],blastn_info[5],blastn_info[6],blastn_info[7]))
-				f_save.write('''
-						</tbody>
-       				 </table>
-      				</div>
-						''')
-				f_save.write('''
-      </div>      
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">close
-        </button>        
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal -->
-</div>
-</td>
-</tr>
+					<td style="color:#F05555;font-size: 15px;">
+					<span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>
+					</td>
+					</tr>
 					''')
+				else:
+					f_save.write('''
+	<td style="font-size: 13px;">
+	<button data-toggle="modal" data-target="#DBSCAN-SWA_%s" style="background-color: #AD2417;color:white;width:50px;height:25px;border-radius: 5px;">detail</button>
+	<div class="modal fade" id="DBSCAN-SWA_%s" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	    <div class="modal-dialog">
+	    <div class="modal-content" style="width:800px;text-align:center;">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+	        <h4 class="modal-title" id="myModalLabel">Blastp and Blastn of %s VS %s</h4>
+	      </div>
+	      <div class="modal-body">
+	        <div class="btn-group" data-toggle="buttons">
+	        <table>
+	        <tr>
+	        <td id="blastp--DBSCAN-SWA_%s" style="font-size: 20px;border:2px solid #D8F2AF;text-align: center;" onclick="show(this.id)">
+	         <button type="button" class="btn btn-default" style="vertical-align: center;font-size: 15px;padding-top: 10px;padding-bottom: 10px;">
+	           blastp results
+	        </button>
+	        </td>       
+	          <td id="blastn--DBSCAN-SWA_%s" style="font-size: 15px;border:2px solid #D8F2AF;text-align: center;" onclick="show(this.id)">
+	          <button type="button" class="btn btn-default" style="vertical-align: center;font-size: 15px;padding-top: 10px;padding-bottom: 10px;">
+	         blastn results
+	        </button>
+	        </td>
+	       
+	        </tr>
+	        
+	      </table>
+	    </div>'''%(str(counter),str(counter),bac_id,hit_phage_id,str(counter),str(counter)))
+					f_save.write('''
+			<div id="blastp--DBSCAN-SWA_%s_result">
+	        <table class="display" class="table table-striped table-hover table-bordered" style="text-align: center;">
+	          <thead>
+	          <tr>
+	            <th>Prophage_Protein</th>
+	            <th>Hit_Phage_Protein</th>
+	            <th>Identity(%%)</th>
+	            <th>Coverage</th>
+	            <th style="word-break: keep-all;white-space:nowrap;">E-value</th>
+	          </tr>
+	          </thead>
+	          <tbody>
+						'''%(str(counter)))
+					for blastp_info in phis[3:]:
+						if '#blastn' in blastp_info:
+							break
+						blastp_info = blastp_info.strip().split('\t')
+						f_save.write('''
+			<tr>
+	            <td style="word-break: break-all; word-wrap:break-word;">%s</td>
+	            <td style="word-break: break-all; word-wrap:break-word;">%s</td>
+	            <td>%s</td>
+	            <td>%s</td>
+	            <td style="word-break: keep-all;white-space:nowrap;">%s</td>
+	        </tr>
+							'''%(blastp_info[1],blastp_info[3],blastp_info[4],blastp_info[5],blastp_info[6]))
+					f_save.write('''
+							</tbody>
+	       				 </table>
+	      				</div>
+							''')
+					f_save.write('''
+			<div id="blastn--DBSCAN-SWA_%s_result">      
+	        <table class="display" class="table table-striped table-hover table-bordered">
+	          <thead>
+	          <tr>
+	            <th>Hit_Prophage_Region</th>
+	            <th>Hit_Phage_Region</th>
+	            <th>Alignment Length</th>
+	            <th>Identity</th>
+	            <th>E-value</th>
+	          </tr>
+	          </thead>
+	          <tbody>
+						'''%(str(counter)))
+					for blastn_info in '\n'.join(phis).split('#blastn')[-1].split('\n'):
+						if blastn_info.strip()!='':
+							blastn_info = blastn_info.strip().split('\t')
+							f_save.write('''
+			<tr>
+	            <td style="word-break: break-all; word-wrap:break-word;">%s|%s</td>
+	            <td>%s|%s</td>
+	            <td>%s</td>            
+	            <td>%s</td>
+	            <td style="word-break: keep-all;white-space:nowrap;">%s</td>
+	        </tr>
+				'''%(blastn_info[1],blastn_info[2],hit_phage_id,blastn_info[4],blastn_info[5],blastn_info[6],blastn_info[7]))
+					f_save.write('''
+							</tbody>
+	       				 </table>
+	      				</div>
+							''')
+					f_save.write('''
+	      </div>      
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">close
+	        </button>        
+	      </div>
+	    </div><!-- /.modal-content -->
+	  </div><!-- /.modal -->
+	</div>
+	</td>
+	</tr>
+						''')
+		f_save.write('''
+			</tbody>
+			</table>
+			</div>
+			''')
 	f_save.write('''
-		</tbody>
-		</table>
-		</div>
 		</body>
 		</html>''')
 
