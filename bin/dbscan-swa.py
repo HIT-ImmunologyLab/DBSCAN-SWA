@@ -1764,20 +1764,30 @@ def prophage_annotate_phagedb(prophage_region_file,prophage_protein_file,prophag
 	filter_file = os.path.join(outdir,'prophage_blastp_phage_identity_0.4_coverage_0.7')
 	filter_identity_coverage(outfile_blastp,filter_file,'query')
 	time.sleep(1)
-	if os.path.exists(outfile_blastp) or os.path.exists(outfile_blastn):
+	if os.path.exists(outfile_blastn):
 		m1 = threading.Thread(target=parse_prophage_blastn_phagedb_6,args=(outfile_blastn,outdir))
+	else:
+		print('prophage nucleotide file was not created, no prophage was detected!!')
+	if os.path.exists(outfile_blastp):
 		m2 = threading.Thread(target=parse_prophage_blastp_phagedb_6,args=(filter_file,outdir))
+	else:
+		print('prophage protein file was not created, no prophage was detected!!')	
+	if os.path.exists(outfile_blastn):	
 		m1.start()
+	if os.path.exists(outfile_blastp):
 		m2.start()
+	if os.path.exists(outfile_blastn):
 		m1.join()
+	if os.path.exists(outfile_blastp):
 		m2.join()
 
 	outfile_blastn_dict_file = os.path.join(outdir,'prophage_blastn_phage_result_dict.npy')
 	outfile_blastp_dict_file = os.path.join(outdir,'prophage_blastp_phage_result_dict.npy')
+	
 	try:
 		get_bac_phage_feature(prophage_region_file,outfile_blastp_dict_file,outfile_blastn_dict_file,outdir,prefix)
 	except:
-		print('no phage detected!')
+		print('no infecting phage was detected!')
 
 def get_bac_phage_feature(prophage_region_file,prophage_blastp_dict_file,prophage_blastn_dict_file,outdir,prefix):
 	all_prophage_info_dict = {}
