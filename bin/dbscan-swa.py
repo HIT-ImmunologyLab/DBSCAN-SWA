@@ -25,7 +25,6 @@ Usage: DBSCAN-SWA [options]
 --idn <x>                  : Minimal % identity of hit region on hit prophage region by making blastn(default:70)
 --cov <x>                  : Minimal % coverage of hit region on hit prophage region by making blastn(default:30)
 --thread_num <x>           : the number of threads(default:10)
-
 """
 
 def get_root_path():
@@ -341,7 +340,9 @@ def GetFaaSequenc(fileName,saveFaaPath,prefix,add_genome_id='no'):   #parse spec
 					direction = '-'
 				locations = re.findall("\d+\.?\d*",str(location))
 				min_start = locations[0]
-				max_end = locations[1]
+				max_end = locations[1]				
+				if int(min_start) < int(max_end):
+					min_start <- str(int(min_start)+1)
 				for loc in location:
 					if int(loc)<int(min_start):
 						min_start = loc
@@ -373,7 +374,7 @@ def GetFaaSequenc(fileName,saveFaaPath,prefix,add_genome_id='no'):   #parse spec
 								savefile_protein.write(proteinId+'\t'+str(location)+'\t'+product+'\n')
 						else:
 							savefile.write('>'+add_genome_id + '|' + str(proteinId) + '|' + str(location) +'\n')
-					# savefile.write(">"+fileID+ '_'+str(counter)+'\n')                   
+						# savefile.write(">"+fileID+ '_'+str(counter)+'\n')                   
 						if translation[-1] == '\n':
 							savefile.write(translation)
 						else:
@@ -1109,6 +1110,7 @@ def decide_boundary(strain_id,bac_fna_file,bac_faa_file,prophage_region_detail_f
 	f_save_summary.write('bacteria_id\tbacteria_def\tgenome_size\tprophage_start\tprophage_end\tkey_proteins\tbest_hit_species\tCDS_number\tattl_region\tattr_region\n')
 	f_save_prophage_protein = open(save_prophage_protein_file,'w')
 	f_save_prophage_nucl = open(save_prophage_nucl_file,'w')
+	
 	#boundary locating
 	if os.path.exists(prophage_region_detail_file):
 		with open(prophage_region_detail_file) as f:
@@ -2797,8 +2799,7 @@ if __name__=='__main__':
 			os.system(command)
 		else:
 			print('download error!please download from http://www.microbiome-bigdata.com/PHISDetector/static/download/DBSCAN-SWA/db.tar.gz')
-			sys.exit(-1)
-	
+			sys.exit(-1)	
 	global strain_inf_dict,type
 	strain_inf_dict,type = get_inf(inputfile_bac,outdir,prefix)
 	if len(list(strain_inf_dict.keys()))==1:
