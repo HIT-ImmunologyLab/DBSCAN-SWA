@@ -342,7 +342,7 @@ def GetFaaSequenc(fileName,saveFaaPath,prefix,add_genome_id='no'):   #parse spec
 				min_start = locations[0]
 				max_end = locations[1]				
 				if int(min_start) < int(max_end):
-					min_start <- str(int(min_start)+1)
+					min_start = int(min_start)+1
 				for loc in location:
 					if int(loc)<int(min_start):
 						min_start = loc
