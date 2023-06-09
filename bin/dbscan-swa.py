@@ -2758,7 +2758,7 @@ if __name__=='__main__':
 		thread_num = args.thread_num
 	else:
 		thread_num = 10
-    global diamond_thread_num
+	global diamond_thread_num
 	if args.diamond_thread_num:
 		diamond_thread_num = args.diamond_thread_num
 	else:
